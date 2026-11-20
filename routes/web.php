@@ -2,6 +2,5 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// API-only application: point browsers to the API root.
+Route::redirect('/', '/api');
