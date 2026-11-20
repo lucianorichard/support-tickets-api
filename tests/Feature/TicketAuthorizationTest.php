@@ -92,7 +92,9 @@ class TicketAuthorizationTest extends TestCase
         $this->as($carol)->patchJson("/api/tickets/{$ticket->id}", ['title' => 'Better title here'])
             ->assertOk()->assertJsonPath('data.title', 'Better title here');
         $this->as($carol)->patchJson("/api/tickets/{$ticket->id}", ['priority' => 'urgent'])
-            ->assertStatus(422)->assertJsonValidationErrors('priority');
+            ->assertStatus(422)->assertOnlyJsonValidationErrors('priority');
+        $this->patchJson("/api/tickets/{$ticket->id}", [])
+            ->assertStatus(422)->assertJsonValidationErrors(['title', 'description']);
 
         $this->as($alice)->patchJson("/api/tickets/{$ticket->id}", ['priority' => 'urgent'])
             ->assertOk()->assertJsonPath('data.priority', 'urgent');
@@ -167,7 +169,14 @@ class TicketAuthorizationTest extends TestCase
     public function only_technicians_list_technicians(): void
     {
         $this->as($this->requester())->getJson('/api/technicians')->assertForbidden();
-        $this->as($this->technician())->getJson('/api/technicians')->assertOk()->assertJsonStructure(['data' => [['id', 'name', 'active_tickets']]]);
+        $alice = $this->technician();
+        $this->ticketFor($this->requester(), $alice, TicketStatus::InProgress);
+        $this->ticketFor($this->requester(), $alice, TicketStatus::Closed);
+
+        // Exactly these fields: no email or other personal data leaks to the listing.
+        $this->as($alice)->getJson('/api/technicians')
+            ->assertOk()
+            ->assertExactJson(['data' => [['id' => $alice->id, 'name' => $alice->name, 'active_tickets' => 1]]]);
     }
 
     // ---- Comments ---------------------------------------------------------

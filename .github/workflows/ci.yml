@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: tickets_test
+          POSTGRES_USER: tickets
+          POSTGRES_PASSWORD: tickets
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tickets -d tickets_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: tickets
+      DB_PASSWORD: tickets
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_pgsql, intl
+          coverage: none
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Prepare environment
+        run: cp .env.example .env && php artisan key:generate
+      - name: Code style (Pint)
+        run: vendor/bin/pint --test
+      - name: Tests (PostgreSQL)
+        run: php artisan test
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the stack
+        run: docker compose up -d --build --wait
+      - name: End-to-end smoke test
+        run: |
+          for i in $(seq 1 30); do curl -sf http://localhost:8080/api >/dev/null && break; sleep 2; done
+          TOKEN=$(curl -sf http://localhost:8080/api/auth/login -H 'Content-Type: application/json' \
+            -d '{"email":"carol@example.com","password":"password"}' | jq -r .token)
+          curl -sf http://localhost:8080/api/tickets -H "Authorization: Bearer $TOKEN" | jq -e '.meta.total == 10'
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/tickets/2 -H "Authorization: Bearer $TOKEN")
+          test "$code" = 404
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs

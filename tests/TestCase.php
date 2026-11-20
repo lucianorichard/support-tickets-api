@@ -13,6 +13,19 @@ abstract class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Safety net: RefreshDatabase drops every table. Refuse to run unless the
+     * connection points at a dedicated test database.
+     */
+    protected function beforeRefreshingDatabase(): void
+    {
+        $database = (string) config('database.connections.'.config('database.default').'.database');
+
+        if (! str_ends_with($database, '_test')) {
+            throw new \RuntimeException("Refusing to run tests against database \"{$database}\": its name must end in _test.");
+        }
+    }
+
     protected function requester(): User
     {
         return User::factory()->requester()->create();

@@ -28,8 +28,10 @@ class UpdateTicketRequest extends FormRequest
         }
 
         return [
-            'title' => ['required_without:description', 'string', 'min:5', 'max:150'],
-            'description' => ['required_without:title', 'string', 'max:5000'],
+            // At least one field is required, but a request that only sends a forbidden
+            // field gets that single, precise error instead of three.
+            'title' => ['required_without_all:description,priority', 'string', 'min:5', 'max:150'],
+            'description' => ['required_without_all:title,priority', 'string', 'max:5000'],
             'priority' => ['prohibited'],
         ];
     }

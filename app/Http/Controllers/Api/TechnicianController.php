@@ -17,12 +17,13 @@ class TechnicianController extends Controller
         abort_unless($request->user()->isTechnician(), 403, 'Only technicians can list technicians.');
 
         $technicians = User::query()
+            ->select(['id', 'name'])
             ->where('role', Role::Technician)
             ->withCount(['assignedTickets as active_tickets' => fn ($q) => $q->whereIn('status', [
                 TicketStatus::Open, TicketStatus::InProgress, TicketStatus::OnHold,
             ])])
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get();
 
         return response()->json(['data' => $technicians]);
     }
