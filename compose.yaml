@@ -16,7 +16,7 @@ services:
       DB_PASSWORD: tickets
       # Test suite target (phpunit.xml switches DB_DATABASE to this one).
       DB_TEST_DATABASE: tickets_test
-      SEED_DEMO_DATA: "true"
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
     depends_on:
       db:
         condition: service_healthy
