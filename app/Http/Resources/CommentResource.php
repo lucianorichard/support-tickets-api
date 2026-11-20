@@ -2,10 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\TicketComment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\TicketComment */
+/** @mixin TicketComment */
 class CommentResource extends JsonResource
 {
     public function toArray(Request $request): array

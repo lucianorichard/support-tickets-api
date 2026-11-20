@@ -43,10 +43,10 @@ return new class extends Migration
         Schema::dropIfExists('tickets');
     }
 
-    /** @param  list<\BackedEnum>  $cases */
+    /** @param  list<BackedEnum>  $cases */
     private static function check(string $table, string $name, string $column, array $cases): void
     {
-        $values = implode(', ', array_map(fn (\BackedEnum $c) => "'{$c->value}'", $cases));
+        $values = implode(', ', array_map(fn (BackedEnum $c) => "'{$c->value}'", $cases));
         DB::statement("ALTER TABLE {$table} ADD CONSTRAINT {$name} CHECK ({$column} IN ({$values}))");
     }
 };
